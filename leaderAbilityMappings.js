@@ -1,18 +1,12 @@
-import leaderAbilities from "./leaderAbility"
-
-export const skillTypes = {
-  "31": "Attack_Percent_Modifier", // + XX% to Attack Damage
-  "33": "statModifierSkillDamage", // + XXX% to Skill Damage
-  "95": "Total_Resist", // not sure
-  "203": "HP_Modifier"
-}
+import leaderAbilities from "./leaderAbility.js"
 
 const parseLeaderAbilities = () => {
-  const parsedData = []
+  const parsedData = {}
   for (let key in leaderAbilities) {
     const seperatedData = leaderAbilities[key
     ].split(',')
-    parsedData.push({
+    parsedData[key] = 
+    {
       id: key,
       name: seperatedData[
         0
@@ -24,7 +18,7 @@ const parseLeaderAbilities = () => {
       comboCap: seperatedData[13], // max # of X-combos needed to cap leader skill
       elementInParty: seperatedData[14],
       skillType: seperatedData[15], // a mapping to determine the modifier of the leader skill
-      targetAllUnitElement: seperatedData[17], // the element being modified
+      elementForSkill: seperatedData[17], // the element being modified
       skillValue_1: seperatedData[18],
       skillValue_2: seperatedData[19],
       hPAbove_1: seperatedData[28],
@@ -43,7 +37,7 @@ const parseLeaderAbilities = () => {
       targetAllUnitElementSecond: seperatedData[57], // the element being modified
       skillValueSecond_1: seperatedData[58],
       skillValueSecond_2: seperatedData[59],
-    })
+    }
   }
   return parsedData
 }
