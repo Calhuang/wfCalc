@@ -13,6 +13,13 @@ export const activationTypes = {
   "12": "", // own skill activations
 }
 
+export const activationTypes_2 = {
+  "0": "", // above or = certain HP
+  "1": "", // below or = certain HP
+  "30": "", // has pierce
+  "31": "", // has levitate
+}
+
 export const hpSkillTargetTypes = {
   "0": "", // target self
   "7": "", // target that character 

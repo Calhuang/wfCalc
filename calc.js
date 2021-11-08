@@ -3,68 +3,176 @@ import abilitiesMappings from "./abilitiesMappings.js"
 import {skillTypes, activationTypes, hpRequirementTargetTypes, hpSkillTargetTypes} from './types.js'
 
 const mainTeam = [{
-	// id: '221004',
-	// attack: 1174,
-	id: '221002',
-	attack: 669,
+	id: '221004',
+  name: 'alice',
+	attack: 1174,
 	skillDmg: 0,
 	isAwakened: true,
 	hp: 3679,
 	maxHp: 3679,
 	type: 'Blue',
+  isPierce: true,
+  isLevitate: true,
 	}, {
 	id: '121004',
+  name: 'ice_witch',
 	attack: 1022,
 	skillDmg: 800,
 	hp: 3679,
 	maxHp: 3679,
 	type: 'Blue',
+  isPierce: false,
+  isLevitate: true,
 	}, {
 	id: '321009',
+  'name': 'cute_fafnir',
 	attack: 888,
 	skillDmg: 400,
 	hp: 3679,
 	maxHp: 3679,
 	type: 'Blue',
+  isPierce: false,
+  isLevitate: true,
 }]
 
-const subTeam = ['121001', '221002', '311009']
+const subTeam = [{id: '121001'}, {id: '221002'}, {id: '311009'}]
+
+var globalBuffs = []
 
 function leaderSkillCheck(main) {
 	if ((main.type === leaderAbilityMappings[main.id].elementForSkill) || (leaderAbilityMappings[main.id].elementForSkill === '(None)')) {
-		if (main.isAwakened) {
-			return Number(leaderAbilityMappings[main.id].skillValue_2)
+		// units that can receive the buff
+    const glbBuffObj = {
+      typing: (leaderAbilityMappings[main.id].elementForSkill === '(None)') ? 'All' : leaderAbilityMappings[main.id].elementForSkill,
+      value: null,
+      target: 'All'
+    }
+    if (main.isAwakened) {
+			glbBuffObj.value = Number(leaderAbilityMappings[main.id].skillValue_2)
+      return glbBuffObj
 		} else {
-			return Number(leaderAbilityMappings[main.id].skillValue_1)
+      glbBuffObj.value = Number(leaderAbilityMappings[main.id].skillValue_1)
+			return glbBuffObj
 		}
 	}
 }
 
 function skillCheck(char, data) {
-	let total = 0
+  const glbBuffObj = {
+    typing: (data.elementForSkill === '(None)') ? 'All' : data.elementForSkill,
+    value: null,
+    target: 'All'
+  }
 	// regular skill check
 	if ((char.type === data.elementForSkill) || (data.elementForSkill === '(None)')) {
-			return Number(data.skillValue_2)
+			glbBuffObj.value =  Number(data.skillValue_2)
+      return glbBuffObj
 	}
 }
 
-function healthCheck(char, data) {
+function healthCheck(char, data, index) {
 	// health based skill check
-	if ((char.type === data.elementforHPRelated) || (data.elementforHPRelated === '(None)')) {
-		if (data.hpAboveOrBelow === 0) {
-			if ((char.hp / char.maxHp) >= data.hpRequirement_2 ){
-				console.log('2:', Number(data.hpAttackAdd_2))
-				total += Number(data.hpAttackAdd_2)
+  console.log(data)
+	if ((char.type === data.elementforHPRelated) || (data.elementforHPRelated === '(None)') || (data.hpSkillTarget && data.hpSkillTarget.length > 0)) {
+    const glbBuffObj = {
+      typing: (data.elementforHPRelated === '(None)') ? 'All' : (data.elementforHPRelated || 'All'),
+      value: 0,
+      target: 'All'
+    }
+    if (data.hpSkillTarget === '7') {
+      // targets party
+      glbBuffObj.target = 'All'
+    } else if (data.hpSkillTarget === '0') {
+      // targets self
+      glbBuffObj.target = char.id
+    }
+		if (data.hpAboveOrBelow === '0') {
+			if ((char.hp / char.maxHp) >= Number(data.hpRequirement_2)){
+        glbBuffObj.value = Number(data.hpAttackAdd_2)
+        return glbBuffObj
 			}
-		} else if (data.hpAboveOrBelow === 1) {
-			if ((char.hp / char.maxHp) <= data.hpRequirement_2 ){
-				total += Number(data.hpAttackAdd_2)
+		} else if (data.hpAboveOrBelow === '1') {
+			if ((char.hp / char.maxHp) <= Number(data.hpRequirement_2) ){
+				glbBuffObj.value = Number(data.hpAttackAdd_2)
+        return glbBuffObj
+			}
+		}
+    else if (data.hpAboveOrBelow === '30') {
+			if (char.isPierce){
+				glbBuffObj.value = Number(data.hpAttackAdd_2)
+        return glbBuffObj
+			}
+		}
+    else if (data.hpAboveOrBelow === '31') {
+			if (char.isLevitate){
+				glbBuffObj.value = Number(data.hpAttackAdd_2)
+        return glbBuffObj
 			}
 		}
 	}
 }
 
-var globalBuffs = []
+
+function calcBuffs(main, sub) {
+  // get char stats
+	// parse leader skills
+	if (skillTypes[leaderAbilityMappings[main.id].skillType]) {
+    const buffInfo = leaderSkillCheck(main)
+    // add leader buff to buff list
+    globalBuffs.push({
+      ...buffInfo,
+      skillType: skillTypes[leaderAbilityMappings[main.id].skillType]
+    })
+	}
+	// parse main unit abilities (3)
+	for (let i = 1; i < 4; i += 1) {
+		const data = abilitiesMappings[`${leaderAbilityMappings[main.id].name}_${i}`]
+		if (skillTypes[data.skillType] ) {
+      // regular skills
+      const buffInfo = skillCheck(main, data, i)
+      if (buffInfo && buffInfo.value) {
+        globalBuffs.push({
+          ...buffInfo,
+          skillType: skillTypes[data.skillType]
+        })
+      }
+		}
+		if (hpSkillTargetTypes[data.hpSkillTarget] !== null) {
+      // hp related skills
+      const buffInfo = healthCheck(main, data, i)
+      if (buffInfo && buffInfo.value) {
+        globalBuffs.push({
+          ...buffInfo,
+          skillType: 'Attack_Percent_Modifier'
+        })
+      }
+		}
+	}
+  // parse sub unit abilities (2)
+	for (let i = 1; i < 3; i += 1) {
+		const data = abilitiesMappings[`${leaderAbilityMappings[sub.id].name}_${i}`]
+		if (skillTypes[data.skillType] ) {
+      // regular skills
+      const buffInfo = skillCheck(sub, data, i)
+      if (buffInfo && buffInfo.value) {
+        globalBuffs.push({
+          ...buffInfo,
+          skillType: skillTypes[data.skillType]
+        })
+      }
+		}
+		if (hpSkillTargetTypes[data.hpSkillTarget] !== null) {
+      // hp related skills
+      const buffInfo = healthCheck(sub, data, i)
+      if (buffInfo && buffInfo.value) {
+        globalBuffs.push({
+          ...buffInfo,
+          skillType: 'Attack_Percent_Modifier'
+        })
+      }
+		}
+	}
+}
 
 function calcUnitDmg(main, sub) {
 	const dynamicInfo = {
@@ -90,21 +198,18 @@ function calcUnitDmg(main, sub) {
 	const hasDirectHit = false
 	const statModifierDirectAttackDamage = 0
 	const totalAdditionalDirectAttackHits = 0
-	// get char stats
-	// parse leader skills
-	if (skillTypes[leaderAbilityMappings[main.id].skillType]) {
-		dynamicInfo[skillTypes[leaderAbilityMappings[main.id].skillType]] += leaderSkillCheck(main)
-	}
-	// parse main abilitites
-	for (let i = 1; i < 4; i += 1) {
-		const data = abilitiesMappings[`${leaderAbilityMappings[main.id].name}_${i}`]
-		if (skillTypes[data.skillType] ) {
-			dynamicInfo[skillTypes[data.skillType]] += skillCheck(main, data)
-		}
-		if (hpSkillTargetTypes[data.hpSkillTarget]) {
-			dynamicInfo[skillTypes[data.skillType]] += healthCheck(main, data)
-		}
-	}
+
+	// loop through each character and calculate buffs
+  globalBuffs.forEach((buff, index) => {
+    // satisfies typing check
+    if (buff.typing === 'All' || buff.typing === main.type) {
+      // satifies the correct target
+      if (buff.target === 'All' || buff.target === main.id) {
+        dynamicInfo[buff.skillType] += buff.value
+      }
+    }
+  })
+
 	return (
 		(dynamicInfo.Skill_Base_Damage + (dynamicInfo.Unit_Attack * (1 + (dynamicInfo.Attack_Percent_Modifier))) * (dynamicInfo.Skill_Attack_Multiplier)) // base dmg
 	 * (isWeak ? 1.5 : 1) // elemental advantage
@@ -122,8 +227,15 @@ function calcUnitDmg(main, sub) {
 }
 
 mainTeam.forEach((unit,index) => {
+	calcBuffs(unit, subTeam[index])
+})
+
+console.log(globalBuffs)
+
+mainTeam.forEach((unit,index) => {
 	console.log(calcUnitDmg(unit, subTeam[index]))
 })
+
 
 // * Total_Resist > 0 Then / (1 + Total_Resist) Else * (1 - Total_Resist)
 // * enablesComboBonus ? (1 + CurrentCombo)
