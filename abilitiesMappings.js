@@ -31,14 +31,28 @@ const parseAbilities = () => {
       attackMulti_1: seperatedData[38],
       attackMulti_2: seperatedData[39],
       // Secondary Ability [X] Effects
-      activationTypeSecond: seperatedData[50], // refer to activationTypes in types.js
-      activationCountSecond_1: seperatedData[53], // the [activationType] count needed to trigger skill
-      activationCountSecond_2: seperatedData[54],
-      activationCapSecond: seperatedData[55], // max # of [activationType]s of skill
-      skillTypeSecond: seperatedData[57], // a mapping to determine the modifier of the leader skill
-      targetAllUnitElementSecond: seperatedData[59], // the element being modified
-      skillValueSecond_1: seperatedData[60],
-      skillValueSecond_2: seperatedData[61],
+      nameSecond: seperatedData[41], // name of unit, indicator of secondary effect
+      activationTypeSecond: seperatedData[51], // refer to activationTypes in types.js
+      activationCountSecond_1: seperatedData[54], // the [activationType] count needed to trigger skill
+      activationCountSecond_2: seperatedData[55],
+      activationCapSecond: seperatedData[56], // max # of [activationType]s of skill
+      skillTypeSecond: seperatedData[58], // a mapping to determine the modifier of the leader skill
+      targetAllUnitElementSecond: seperatedData[60], // the element being modified
+      skillValueSecond_1: seperatedData[61],
+      skillValueSecond_2: seperatedData[62],
+      hpAboveOrBelowSecond: seperatedData[68], // 0 is above, 1 is below
+      hpRequirementTargetSecond: seperatedData[69],
+      elementforHPRelatedSecond: seperatedData[70],
+      hpRequirementSecond_1: seperatedData[71],
+      hpRequirementSecond_2: seperatedData[72],
+      hpBelowSecond_1: seperatedData[73],
+      hpBelowSecond_2: seperatedData[74],
+      hpSkillTargetSecond: seperatedData[75],
+      unknownElementTarget: seperatedData[76],
+      hpAttackAddSecond_1: seperatedData[77], // + XX% to Attack Damage to characters based on ['hpAtOrBelow', 'elementforHPRelated']
+      hpAttackAddSecond_2: seperatedData[78],
+      attackMultiSecond_1: seperatedData[79],
+      attackMultiSecond_2: seperatedData[80],
     }
   }
   return parsedData

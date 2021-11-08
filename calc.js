@@ -5,19 +5,19 @@ import {skillTypes, activationTypes, hpRequirementTargetTypes, hpSkillTargetType
 const mainTeam = [{
 	id: '221004',
   name: 'alice',
-	attack: 1174,
+	attack: 1010,
 	skillDmg: 0,
 	isAwakened: true,
 	hp: 3679,
 	maxHp: 3679,
 	type: 'Blue',
-  isPierce: true,
-  isLevitate: true,
+  isPierce: false,
+  isLevitate: false,
 	}, {
 	id: '121004',
   name: 'ice_witch',
-	attack: 1022,
-	skillDmg: 800,
+	attack: 828,
+	skillDmg: 0,
 	hp: 3679,
 	maxHp: 3679,
 	type: 'Blue',
@@ -26,8 +26,8 @@ const mainTeam = [{
 	}, {
 	id: '321009',
   'name': 'cute_fafnir',
-	attack: 888,
-	skillDmg: 400,
+	attack: 757,
+	skillDmg: 0,
 	hp: 3679,
 	maxHp: 3679,
 	type: 'Blue',
@@ -66,46 +66,57 @@ function skillCheck(char, data) {
 	// regular skill check
 	if ((char.type === data.elementForSkill) || (data.elementForSkill === '(None)')) {
 			glbBuffObj.value =  Number(data.skillValue_2)
+      // check for skill secondary effect
+      // if (data.nameSecond && data.nameSecond.length > 0) {
+      //   if ((char.type === data.elementForSkill) || (data.elementForSkill === '(None)')) {
+      //     glbBuffObj.value =  Number(data.skillValue_2)
+      //   }
+      // }
       return glbBuffObj
 	}
 }
 
-function healthCheck(char, data, index) {
+function healthCheck(char, data, index, isSecond = false) {
 	// health based skill check
+  const elementforHPRelated = isSecond ? data.elementforHPRelatedSecond : data.elementforHPRelated
+  const hpSkillTarget = isSecond ? data.hpSkillTargetSecond : data.hpSkillTarget
+  const hpAboveOrBelow = isSecond ? data.hpAboveOrBelowSecond : data.hpAboveOrBelow
+  const hpRequirement_2 = isSecond ? data.hpRequirementSecond_2 : data.hpRequirement_2
+  const hpAttackAdd_2 = isSecond ? data.hpAttackAddSecond_2 : data.hpAttackAdd_2
   console.log(data)
-	if ((char.type === data.elementforHPRelated) || (data.elementforHPRelated === '(None)') || (data.hpSkillTarget && data.hpSkillTarget.length > 0)) {
+	if ((char.type === elementforHPRelated) || (elementforHPRelated === '(None)') || (hpSkillTarget && hpSkillTarget.length > 0)) {
     const glbBuffObj = {
-      typing: (data.elementforHPRelated === '(None)') ? 'All' : (data.elementforHPRelated || 'All'),
+      typing: (elementforHPRelated === '(None)') ? 'All' : (elementforHPRelated || 'All'),
       value: 0,
       target: 'All'
     }
-    if (data.hpSkillTarget === '7') {
+    if (hpSkillTarget === '7') {
       // targets party
       glbBuffObj.target = 'All'
-    } else if (data.hpSkillTarget === '0') {
+    } else if (hpSkillTarget === '0') {
       // targets self
       glbBuffObj.target = char.id
     }
-		if (data.hpAboveOrBelow === '0') {
-			if ((char.hp / char.maxHp) >= Number(data.hpRequirement_2)){
-        glbBuffObj.value = Number(data.hpAttackAdd_2)
+		if (hpAboveOrBelow === '0') {
+			if ((char.hp / char.maxHp) >= Number(hpRequirement_2)){
+        glbBuffObj.value = Number(hpAttackAdd_2)
         return glbBuffObj
 			}
-		} else if (data.hpAboveOrBelow === '1') {
-			if ((char.hp / char.maxHp) <= Number(data.hpRequirement_2) ){
-				glbBuffObj.value = Number(data.hpAttackAdd_2)
+		} else if (hpAboveOrBelow === '1') {
+			if ((char.hp / char.maxHp) <= Number(hpRequirement_2) ){
+				glbBuffObj.value = Number(hpAttackAdd_2)
         return glbBuffObj
 			}
 		}
-    else if (data.hpAboveOrBelow === '30') {
+    else if (hpAboveOrBelow === '30') {
 			if (char.isPierce){
-				glbBuffObj.value = Number(data.hpAttackAdd_2)
+				glbBuffObj.value = Number(hpAttackAdd_2)
         return glbBuffObj
 			}
 		}
-    else if (data.hpAboveOrBelow === '31') {
+    else if (hpAboveOrBelow === '31') {
 			if (char.isLevitate){
-				glbBuffObj.value = Number(data.hpAttackAdd_2)
+				glbBuffObj.value = Number(hpAttackAdd_2)
         return glbBuffObj
 			}
 		}
@@ -127,7 +138,8 @@ function calcBuffs(main, sub) {
 	// parse main unit abilities (3)
 	for (let i = 1; i < 4; i += 1) {
 		const data = abilitiesMappings[`${leaderAbilityMappings[main.id].name}_${i}`]
-		if (skillTypes[data.skillType] ) {
+    const isSecond = (data.nameSecond && data.nameSecond.length > 0)
+		if (skillTypes[data.skillType]) {
       // regular skills
       const buffInfo = skillCheck(main, data, i)
       if (buffInfo && buffInfo.value) {
@@ -136,8 +148,17 @@ function calcBuffs(main, sub) {
           skillType: skillTypes[data.skillType]
         })
       }
+      if (isSecond) {
+        const buffInfo2 = skillCheck(main, data, i, isSecond)
+        if (buffInfo2 && buffInfo2.value) {
+          globalBuffs.push({
+            ...buffInfo2,
+            skillType: skillTypes[data.skillTypeSecond]
+          })
+        }
+      }
 		}
-		if (hpSkillTargetTypes[data.hpSkillTarget] !== null) {
+		if (hpSkillTargetTypes[data.hpSkillTarget] !== null || (hpSkillTargetTypes[data.hpSkillTargetSecond] !== null)) {
       // hp related skills
       const buffInfo = healthCheck(main, data, i)
       if (buffInfo && buffInfo.value) {
@@ -146,11 +167,21 @@ function calcBuffs(main, sub) {
           skillType: 'Attack_Percent_Modifier'
         })
       }
+      if (isSecond) {
+        const buffInfo2 = healthCheck(main, data, i, isSecond)
+        if (buffInfo2 && buffInfo2.value) {
+          globalBuffs.push({
+            ...buffInfo2,
+            skillType: 'Attack_Percent_Modifier'
+          })
+        }
+      }
 		}
 	}
   // parse sub unit abilities (2)
 	for (let i = 1; i < 3; i += 1) {
 		const data = abilitiesMappings[`${leaderAbilityMappings[sub.id].name}_${i}`]
+    const isSecond = (data.nameSecond && data.nameSecond.length > 0)
 		if (skillTypes[data.skillType] ) {
       // regular skills
       const buffInfo = skillCheck(sub, data, i)
@@ -160,8 +191,17 @@ function calcBuffs(main, sub) {
           skillType: skillTypes[data.skillType]
         })
       }
+      if (isSecond) {
+        const buffInfo2 = skillCheck(sub, data, i, isSecond)
+        if (buffInfo2 && buffInfo2.value) {
+          globalBuffs.push({
+            ...buffInfo2,
+            skillType: skillTypes[data.skillTypeSecond]
+          })
+        }
+      }
 		}
-		if (hpSkillTargetTypes[data.hpSkillTarget] !== null) {
+		if (hpSkillTargetTypes[data.hpSkillTarget] !== null || (hpSkillTargetTypes[data.hpSkillTargetSecond] !== null)) {
       // hp related skills
       const buffInfo = healthCheck(sub, data, i)
       if (buffInfo && buffInfo.value) {
@@ -169,6 +209,15 @@ function calcBuffs(main, sub) {
           ...buffInfo,
           skillType: 'Attack_Percent_Modifier'
         })
+      }
+      if (isSecond) {
+        const buffInfo2 = healthCheck(sub, data, i, isSecond)
+        if (buffInfo2 && buffInfo2.value) {
+          globalBuffs.push({
+            ...buffInfo2,
+            skillType: 'Attack_Percent_Modifier'
+          })
+        }
       }
 		}
 	}
